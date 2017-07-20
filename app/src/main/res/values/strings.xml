@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">RemoteKeyboard</string>
+    <string name="space">_</string>
+    <string name="arrow_right"><![CDATA[->]]></string>
+    <string name="arrow_left"><![CDATA[<-]]></string>
+    <string name="server_config">Server config</string>
+    <string name="ip_address">IP Address</string>
+    <string name="port_number">Port number</string>
+    <string name="OK">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="key_sending_error">Error occurred during key sending</string>
+</resources>
