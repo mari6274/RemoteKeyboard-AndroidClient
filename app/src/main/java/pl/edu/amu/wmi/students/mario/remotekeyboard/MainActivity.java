@@ -4,25 +4,16 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
-import android.view.View;
+import android.view.*;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.Toast;
+import pl.edu.amu.wmi.students.mario.remotekeyboard.task.SendDatagramPacketAsyncTaskFactory;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
 import java.net.SocketException;
-import java.nio.ByteBuffer;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -31,6 +22,7 @@ public class MainActivity extends AppCompatActivity {
     private DatagramSocket datagramSocket;
     private String ip;
     private int port;
+    private SendDatagramPacketAsyncTaskFactory sendDatagramPacketAsyncTaskFactory;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -92,16 +84,35 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
         ip = preferences.getString(IP_KEY, "localhost");
         port = preferences.getInt(PORT_KEY, 6274);
-    }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
         try {
             datagramSocket = new DatagramSocket();
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
+        sendDatagramPacketAsyncTaskFactory = new SendDatagramPacketAsyncTaskFactory(ip, port, datagramSocket, this);
+
+        findViewById(R.id.touch_view).setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                int index = event.getActionIndex();
+                int action = event.getActionMasked();
+
+                switch (action) {
+                    case MotionEvent.ACTION_MOVE:
+                        float x = event.getAxisValue(MotionEvent.AXIS_X, index);
+                        float y = event.getAxisValue(MotionEvent.AXIS_Y, index);
+                        float lastX = x;
+                        float lastY = y;
+                        if (event.getHistorySize() > 0) {
+                            lastX = event.getHistoricalAxisValue(MotionEvent.AXIS_X, index, event.getHistorySize() - 1);
+                            lastY = event.getHistoricalAxisValue(MotionEvent.AXIS_Y, index, event.getHistorySize() - 1);
+                        }
+                        sendMouseMoveDatagramPacket(x - lastX, y - lastY);
+                }
+                return true;
+            }
+        });
     }
 
     @Override
@@ -111,43 +122,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void leftClick(View view) {
-        sendDatagramPacket(0x25);
+        sendKeyCodeDatagramPacket(0x25);
     }
 
     public void rightClick(View view) {
-        sendDatagramPacket(0x27);
+        sendKeyCodeDatagramPacket(0x27);
     }
 
     public void spaceClick(View view) {
-        sendDatagramPacket(0x20);
+        sendKeyCodeDatagramPacket(0x20);
     }
 
-    private void sendDatagramPacket(final int keyCode) {
-        new AsyncTask<Integer, Void, Void>() {
+    public void mouseClick(View view) {
+        sendMouseClickDatagramPacket();
+    }
 
-            private boolean error;
+    private void sendKeyCodeDatagramPacket(final int keyCode) {
+        sendDatagramPacketAsyncTaskFactory.createKeyCodeTask().execute(keyCode);
+    }
 
-            @Override
-            protected Void doInBackground(Integer... params) {
-                byte[] buff = ByteBuffer.allocate(4).putInt(keyCode).array();
-                try {
-                    DatagramPacket packet = new DatagramPacket(buff, buff.length, new InetSocketAddress(ip, port));
-                    datagramSocket.send(packet);
-                } catch (IOException e) {
-                    error = true;
-                    Log.e("SocketError", "Error during sending packet", e);
-                }
-                return null;
-            }
+    private void sendMouseMoveDatagramPacket(final float x, final float y) {
+        sendDatagramPacketAsyncTaskFactory.createMouseMoveTask().execute(Math.round(x), Math.round(y));
+    }
 
-            @Override
-            protected void onPostExecute(Void aVoid) {
-                if (error) {
-                    Toast.makeText(MainActivity.this, R.string.key_sending_error, Toast.LENGTH_SHORT).show();
-                }
-            }
-        }.execute(keyCode);
-
-
+    private void sendMouseClickDatagramPacket() {
+        sendDatagramPacketAsyncTaskFactory.createMouseClickTask().execute();
     }
 }
