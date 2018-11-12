@@ -31,9 +31,17 @@
     </LinearLayout>
 
     <LinearLayout android:layout_weight="1"
+                  android:orientation="horizontal"
                   android:layout_width="match_parent"
                   android:layout_height="match_parent">
         <ImageButton
+                android:layout_weight="0.8"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:onClick="barCodeScannerClick"
+                android:src="@drawable/ic_bar_code_scanner_black_24dp"/>
+        <ImageButton
+                android:layout_weight="0.2"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:onClick="spaceClick"
