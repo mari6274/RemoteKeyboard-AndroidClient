@@ -1,12 +1,12 @@
 package pl.edu.amu.wmi.students.mario.remotekeyboard;
 
 import android.app.AlertDialog;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.SharedPreferences;
+import android.content.*;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
+import android.util.Log;
 import android.view.*;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -19,6 +19,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String IP_KEY = "ip";
     private static final String PORT_KEY = "port";
+    private static final int BAR_CODE_SCANNER_REQUEST_CODE = 0;
+    private static final String ZXING_APP_URI = "https://play.google.com/store/apps/details?id=com.google.zxing.client.android";
     private DatagramSocket datagramSocket;
     private String ip;
     private int port;
@@ -147,5 +149,54 @@ public class MainActivity extends AppCompatActivity {
 
     private void sendMouseClickDatagramPacket() {
         sendDatagramPacketAsyncTaskFactory.createMouseClickTask().execute();
+    }
+
+    public void barCodeScannerClick(View view) {
+        try {
+            Intent intent = new Intent("com.google.zxing.client.android.SCAN");
+            intent.putExtra("SCAN_MODE", "PRODUCT_MODE");
+            startActivityForResult(intent, BAR_CODE_SCANNER_REQUEST_CODE);
+        } catch (ActivityNotFoundException e) {
+            showInstallZXingDialog();
+        }
+    }
+
+    private void showInstallZXingDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.missing_bar_code_scanner_app)
+                .setMessage(R.string.install_zxing_bar_code_scanner)
+                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(ZXING_APP_URI)));
+                    }
+                })
+                .setNegativeButton(R.string.no, null)
+                .show();
+    }
+
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        if (requestCode == BAR_CODE_SCANNER_REQUEST_CODE && resultCode == RESULT_OK) {
+            String productCode = intent.getStringExtra("SCAN_RESULT");
+            Log.d("SCAN_RESULT", productCode);
+            sendBarCodeScannerKeyCombination(productCode);
+        }
+    }
+
+    private void sendBarCodeScannerKeyCombination(String productCode) {
+        sendKeyCodeDatagramPacket(KeyEvent.KEYCODE_F9);
+        for (char ch : padRightWithSpacesTo15Length(productCode).toCharArray()) {
+            sendKeyCodeDatagramPacket(ch);
+        }
+        sendKeyCodeDatagramPacket(KeyEvent.KEYCODE_F2);
+    }
+
+    private String padRightWithSpacesTo15Length(String productCode) {
+        StringBuilder productCodeBuilder = new StringBuilder(productCode);
+        while (productCodeBuilder.length() < 15) {
+            productCodeBuilder.append(" ");
+        }
+        productCode = productCodeBuilder.toString();
+        return productCode;
     }
 }

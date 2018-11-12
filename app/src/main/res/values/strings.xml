@@ -1,12 +1,13 @@
 <resources>
     <string name="app_name">RemoteKeyboard</string>
-    <string name="space">_</string>
-    <string name="arrow_right"><![CDATA[->]]></string>
-    <string name="arrow_left"><![CDATA[<-]]></string>
     <string name="server_config">Server config</string>
     <string name="ip_address">IP Address</string>
     <string name="port_number">Port number</string>
     <string name="OK">OK</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
     <string name="cancel">Cancel</string>
     <string name="key_sending_error">Error occurred during key sending</string>
+    <string name="missing_bar_code_scanner_app">Missing bar code scanner app</string>
+    <string name="install_zxing_bar_code_scanner">Would you like to install ZXing bar code scanner?</string>
 </resources>
